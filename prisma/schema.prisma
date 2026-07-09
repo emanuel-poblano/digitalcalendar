@@ -1,18 +1,223 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  name         String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  tasks        Task[]
+  projects     Project[]
+  habits       Habit[]
+  habitLogs    HabitLog[]
+  events       Event[]
+  goals        Goal[]
+  milestones   Milestone[]
+  budgets      Budget[]
+  transactions Transaction[]
+  categories   Category[]
+  achievements Achievement[]
+  xpEntries    XPEntry[]
+  friends      Friend[]
+  posts        Post[]
+  comments     Comment[]
+  likes        Like[]
+  notifications Notification[]
+}
+
+model Project {
   id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
+  name      String
+  color     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tasks     Task[]
+}
+
+model Task {
+  id               String    @id @default(cuid())
+  title            String
+  description      String?
+  priority         String    @default("Medium")
+  status           String    @default("todo")
+  dueDate          DateTime?
+  estimatedMinutes Int?
+  actualMinutes    Int?
+  tags             String[]
+  projectId        String?
+  project          Project?  @relation(fields: [projectId], references: [id])
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Habit {
+  id           String     @id @default(cuid())
+  title        String
+  frequency    String     @default("daily")
+  target       Int        @default(1)
+  color        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  habitLogs    HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  completed Boolean  @default(false)
+  loggedAt  DateTime @default(now())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Event {
+  id              String   @id @default(cuid())
+  title           String
+  start           DateTime
+  end             DateTime?
+  allDay          Boolean  @default(false)
+  category        String?
+  color           String?
+  recurring       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+}
+
+model Goal {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  targetValue String?
+  currentValue String?
+  deadline    DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  milestones  Milestone[]
+}
+
+model Milestone {
+  id        String   @id @default(cuid())
+  title     String
+  achieved  Boolean  @default(false)
+  goalId    String
+  goal      Goal     @relation(fields: [goalId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Budget {
+  id          String        @id @default(cuid())
+  month       String
+  income      Float         @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String     @id @default(cuid())
+  amount      Float
+  description String
+  type        String     @default("expense")
+  occurredAt  DateTime   @default(now())
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  budgetId    String?
+  budget      Budget?    @relation(fields: [budgetId], references: [id])
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  kind         String        @default("expense")
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  transactions Transaction[]
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  earnedAt    DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model XPEntry {
+  id        String   @id @default(cuid())
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Friend {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id        String    @id @default(cuid())
+  content   String
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  comments  Comment[]
+  likes     Like[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
 }

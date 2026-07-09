@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { CalendarDays, Goal, Home, ListTodo, PiggyBank, Sparkles, UserRound } from "lucide-react";
 
+import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 
 const navigation = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -16,6 +19,9 @@ const navigation = [
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { user, isAuthenticated, loading, signOut } = useAuth();
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.16),_transparent_26%),linear-gradient(135deg,_#f8fafc_0%,_#eef2ff_100%)] text-zinc-900 dark:bg-[radial-gradient(circle_at_top_left,_rgba(99,102,241,0.2),_transparent_24%),linear-gradient(135deg,_#050816_0%,_#111827_100%)] dark:text-zinc-50">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
@@ -30,9 +36,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm">
-              Sign in
-            </Button>
+            {loading ? (
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">Loading…</span>
+            ) : isAuthenticated && user ? (
+              <>
+                <span className="hidden text-sm text-zinc-600 dark:text-zinc-300 sm:block">{user.name}</span>
+                <Button variant="ghost" size="sm" onClick={signOut}>
+                  Sign out
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" size="sm">
+                Sign in
+              </Button>
+            )}
             <Button size="sm">Try demo</Button>
           </div>
         </header>
@@ -48,7 +65,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     className={cn(
                       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-900",
-                      item.href === "/" && "bg-zinc-100 text-zinc-950 dark:bg-zinc-900 dark:text-white"
+                      (item.href === "/" && pathname === "/") || (item.href !== "/" && pathname.startsWith(item.href))
+                        ? "bg-zinc-100 text-zinc-950 dark:bg-zinc-900 dark:text-white"
+                        : "text-zinc-600 dark:text-zinc-300"
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -73,7 +92,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               transition={{ duration: 0.3 }}
               className="rounded-3xl border border-white/70 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/70 sm:p-6"
             >
-              {children}
+              {!isAuthenticated && !loading ? (
+                <div className="space-y-4">
+                  <div className="max-w-2xl">
+                    <p className="text-sm font-medium text-indigo-600 dark:text-indigo-400">Welcome back</p>
+                    <h1 className="text-3xl font-semibold tracking-tight">Sign in to unlock your LifeOS workspace.</h1>
+                    <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+                      The experience is now gated behind a simple authentication layer so real users can be introduced into the product flow.
+                    </p>
+                  </div>
+                  <AuthCard />
+                </div>
+              ) : (
+                children
+              )}
             </motion.div>
           </main>
         </div>
