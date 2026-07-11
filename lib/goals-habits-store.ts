@@ -37,6 +37,12 @@ export interface HabitInput {
   completedToday?: boolean;
 }
 
+export interface GoalProgressInput {
+  id: string;
+  current?: number;
+  delta?: number;
+}
+
 const GOALS_FILE = path.join(process.cwd(), "data", "goals.json");
 const HABITS_FILE = path.join(process.cwd(), "data", "habits.json");
 
@@ -78,6 +84,21 @@ export async function createGoal(input: GoalInput) {
   };
 
   goals.unshift(goal);
+  await writeJson(GOALS_FILE, goals);
+  return goal;
+}
+
+export async function updateGoalProgress(input: GoalProgressInput) {
+  const goals = await getGoals();
+  const goal = goals.find((entry) => entry.id === input.id);
+  if (!goal) throw new Error("Goal not found");
+
+  if (typeof input.current === "number") {
+    goal.current = Math.max(0, Math.min(goal.target, input.current));
+  } else if (typeof input.delta === "number") {
+    goal.current = Math.max(0, Math.min(goal.target, goal.current + input.delta));
+  }
+
   await writeJson(GOALS_FILE, goals);
   return goal;
 }

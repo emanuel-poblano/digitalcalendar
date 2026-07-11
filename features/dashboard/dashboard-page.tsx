@@ -1,3 +1,5 @@
+"use client";
+
 import {
   ArrowRight,
   CalendarClock,
@@ -9,12 +11,17 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+import { DailyReviewCard } from "@/components/dashboard/daily-review-card";
+import { FocusPlanner } from "@/components/dashboard/focus-planner";
 import { InsightChart } from "@/components/dashboard/insight-chart";
+import { TodayFocusCard, type TodayFocusItem } from "@/components/dashboard/todays-focus-card";
+import { WeeklyReviewCard } from "@/components/dashboard/weekly-review-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OnboardingCard } from "@/components/onboarding/onboarding-card";
 import { InsightPanel } from "@/features/dashboard/insight-panel";
 import type { DashboardEvent, DashboardInsight, DashboardMetric, DashboardTask } from "@/types/app";
+import { useCallback, useEffect, useState } from "react";
 
 const metrics: DashboardMetric[] = [
   {
@@ -81,6 +88,23 @@ const toneStyles = {
 };
 
 export function DashboardPage() {
+  const [focusItems, setFocusItems] = useState<TodayFocusItem[]>([]);
+  const [focusRefreshKey, setFocusRefreshKey] = useState(0);
+
+  const refreshFocusItems = useCallback(() => {
+    setFocusRefreshKey((value) => value + 1);
+  }, []);
+
+  useEffect(() => {
+    const loadFocusItems = async () => {
+      const response = await fetch("/api/today-focus");
+      const data = (await response.json()) as TodayFocusItem[];
+      setFocusItems(data);
+    };
+
+    loadFocusItems();
+  }, [focusRefreshKey]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -95,6 +119,10 @@ export function DashboardPage() {
       </div>
 
       <OnboardingCard />
+      <DailyReviewCard />
+      <WeeklyReviewCard />
+      <TodayFocusCard items={focusItems} onActionComplete={refreshFocusItems} />
+      <FocusPlanner />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => {

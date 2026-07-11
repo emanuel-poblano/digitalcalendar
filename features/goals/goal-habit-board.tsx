@@ -6,6 +6,7 @@ import { PlusCircle, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state/empty-state";
+import { calculateGoalProgress } from "@/lib/progress-utils";
 
 export type GoalItem = {
   id: string;
@@ -83,6 +84,15 @@ export function GoalHabitBoard() {
     await loadData();
   };
 
+  const handleUpdateGoal = async (id: string, delta: number) => {
+    await fetch("/api/goals", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, delta }),
+    });
+    await loadData();
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
       <Card>
@@ -128,7 +138,7 @@ export function GoalHabitBoard() {
             <EmptyState title="No goals yet" description="Add one big goal to give your progress direction." />
           ) : (
             goals.map((goal) => {
-              const progress = Math.min(100, Math.round((goal.current / goal.target) * 100));
+              const progress = calculateGoalProgress(goal.current, goal.target);
               return (
                 <div key={goal.id} className="rounded-2xl border border-zinc-100 p-3 dark:border-zinc-800">
                   <div className="flex items-center justify-between gap-3">
@@ -142,6 +152,17 @@ export function GoalHabitBoard() {
                   </div>
                   <div className="mt-3 h-2 rounded-full bg-zinc-100 dark:bg-zinc-800">
                     <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400" style={{ width: `${progress}%` }} />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-sm text-zinc-500 dark:text-zinc-400">
+                    <span>Current {goal.current}/{goal.target}</span>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleUpdateGoal(goal.id, -1)}>
+                        -1
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => handleUpdateGoal(goal.id, 1)}>
+                        +1
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );

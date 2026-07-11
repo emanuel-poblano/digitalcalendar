@@ -96,12 +96,30 @@ export function TaskList() {
     await loadTasks();
   };
 
+  const completedCount = tasks.filter((task) => task.status === "done").length;
+  const progressPercent = tasks.length === 0 ? 0 : Math.round((completedCount / tasks.length) * 100);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Task board</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="rounded-2xl bg-zinc-50 p-3 dark:bg-zinc-900/80">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium text-zinc-900 dark:text-white">Progress snapshot</p>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">{completedCount} of {tasks.length} tasks completed</p>
+            </div>
+            <span className="rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400">
+              {progressPercent}%
+            </span>
+          </div>
+          <div className="mt-3 h-2 rounded-full bg-zinc-200 dark:bg-zinc-800">
+            <div className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-cyan-400" style={{ width: `${progressPercent}%` }} />
+          </div>
+        </div>
+
         <div className="rounded-2xl border border-dashed border-zinc-200 p-3 dark:border-zinc-800">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -149,8 +167,9 @@ export function TaskList() {
         ) : tasks.length === 0 ? (
           <EmptyState title="No tasks yet" description="Create your first task to get moving." />
         ) : (
-          tasks.map((task) => (
-            <div key={task.id} className="rounded-2xl border border-zinc-100 p-3 dark:border-zinc-800">
+          <div className="space-y-3">
+            {tasks.map((task) => (
+              <div key={task.id} className="rounded-2xl border border-zinc-100 p-3 dark:border-zinc-800">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-medium text-zinc-900 dark:text-white">{task.title}</p>
@@ -179,8 +198,9 @@ export function TaskList() {
                   Delete
                 </Button>
               </div>
-            </div>
-          ))
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

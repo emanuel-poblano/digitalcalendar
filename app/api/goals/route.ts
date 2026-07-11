@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createGoal, getGoals } from "@/lib/goals-habits-store";
+import { createGoal, getGoals, updateGoalProgress } from "@/lib/goals-habits-store";
 
 export async function GET() {
   const goals = await getGoals();
@@ -11,4 +11,10 @@ export async function POST(request: Request) {
   const payload = await request.json();
   const goal = await createGoal(payload);
   return NextResponse.json(goal, { status: 201 });
+}
+
+export async function PATCH(request: Request) {
+  const payload = await request.json();
+  const goal = await updateGoalProgress(payload);
+  return NextResponse.json(goal);
 }
