@@ -67,6 +67,26 @@ export async function createEvent(input: CalendarEventInput) {
   return event;
 }
 
+export async function updateEvent(id: string, updates: Partial<CalendarEventInput>) {
+  const events = await readEvents();
+  const index = events.findIndex((event) => event.id === id);
+  if (index === -1) {
+    throw new Error("Event not found");
+  }
+
+  events[index] = {
+    ...events[index],
+    ...updates,
+    title: updates.title?.trim() ?? events[index].title,
+    category: updates.category?.trim() ?? events[index].category,
+    note: updates.note?.trim() ?? events[index].note,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await writeEvents(events);
+  return events[index];
+}
+
 export async function deleteEvent(id: string) {
   const events = await readEvents();
   const nextEvents = events.filter((event) => event.id !== id);

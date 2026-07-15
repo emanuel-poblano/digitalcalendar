@@ -8,6 +8,7 @@ export interface BudgetTransactionRecord {
   category: string;
   type: "income" | "expense";
   recurring?: boolean;
+  occurredAt?: string;
   createdAt: string;
 }
 
@@ -17,6 +18,7 @@ export interface BudgetTransactionInput {
   category: string;
   type: "income" | "expense";
   recurring?: boolean;
+  occurredAt?: string;
 }
 
 const DATA_FILE = path.join(process.cwd(), "data", "budget.json");
@@ -54,12 +56,38 @@ export async function createTransaction(input: BudgetTransactionInput) {
     category: input.category.trim(),
     type: input.type,
     recurring: input.recurring ?? false,
+    occurredAt: input.occurredAt,
     createdAt: new Date().toISOString(),
   };
 
   transactions.unshift(transaction);
   await writeTransactions(transactions);
   return transaction;
+}
+
+export async function updateTransaction(
+  id: string,
+  updates: Partial<BudgetTransactionInput>
+) {
+  const transactions = await readTransactions();
+  const index = transactions.findIndex((transaction) => transaction.id === id);
+  if (index === -1) {
+    throw new Error("Transaction not found");
+  }
+
+  transactions[index] = {
+    ...transactions[index],
+    ...updates,
+    description: updates.description?.trim() ?? transactions[index].description,
+    category: updates.category?.trim() ?? transactions[index].category,
+    amount:
+      typeof updates.amount === "number"
+        ? Number(updates.amount)
+        : transactions[index].amount,
+  };
+
+  await writeTransactions(transactions);
+  return transactions[index];
 }
 
 export async function deleteTransaction(id: string) {

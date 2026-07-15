@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { createEvent, deleteEvent, getEvents } from "@/lib/events-store";
+import { createEvent, deleteEvent, getEvents, updateEvent } from "@/lib/events-store";
 
 export async function GET() {
   const events = await getEvents();
@@ -11,6 +11,12 @@ export async function POST(request: Request) {
   const payload = await request.json();
   const createdEvent = await createEvent(payload);
   return NextResponse.json(createdEvent, { status: 201 });
+}
+
+export async function PATCH(request: Request) {
+  const payload = await request.json();
+  const updatedEvent = await updateEvent(payload.id, payload);
+  return NextResponse.json(updatedEvent);
 }
 
 export async function DELETE(request: Request) {
