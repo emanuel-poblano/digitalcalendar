@@ -6,6 +6,8 @@ import { PlusCircle, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/empty-state/empty-state";
+import { WeekView } from "@/features/calendar/week-view";
+import { useReminders } from "@/features/calendar/use-reminders";
 
 export type CalendarEventItem = {
   id: string;
@@ -15,12 +17,14 @@ export type CalendarEventItem = {
   allDay?: boolean;
   category: string;
   note?: string;
+  recurrence?: "none" | "daily" | "weekly" | "monthly";
+  reminderMinutes?: number | null;
 };
 
 export function EventBoard() {
   const [events, setEvents] = useState<CalendarEventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [draft, setDraft] = useState({ title: "", start: "", end: "", category: "Focus", note: "" });
+  const [draft, setDraft] = useState({ title: "", start: "", end: "", category: "Focus", note: "", recurrence: "none", reminderMinutes: "" });
 
   const loadEvents = async () => {
     try {
@@ -42,10 +46,14 @@ export function EventBoard() {
     await fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
+      body: JSON.stringify({
+        ...draft,
+        end: draft.end || null,
+        reminderMinutes: draft.reminderMinutes === "" ? null : Number(draft.reminderMinutes),
+      }),
     });
 
-    setDraft({ title: "", start: "", end: "", category: "Focus", note: "" });
+    setDraft({ title: "", start: "", end: "", category: "Focus", note: "", recurrence: "none", reminderMinutes: "" });
     await loadEvents();
   };
 
@@ -58,7 +66,11 @@ export function EventBoard() {
     await loadEvents();
   };
 
+  const { permission, requestPermission } = useReminders(events);
+
   return (
+    <div className="space-y-6">
+    <WeekView events={events} />
     <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
       <Card>
         <CardHeader>
@@ -95,6 +107,29 @@ export function EventBoard() {
                 value={draft.end}
                 onChange={(event) => setDraft((current) => ({ ...current, end: event.target.value }))}
               />
+              <select
+                aria-label="Repeat"
+                className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
+                value={draft.recurrence}
+                onChange={(event) => setDraft((current) => ({ ...current, recurrence: event.target.value }))}
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Repeats daily</option>
+                <option value="weekly">Repeats weekly</option>
+                <option value="monthly">Repeats monthly</option>
+              </select>
+              <select
+                aria-label="Reminder"
+                className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
+                value={draft.reminderMinutes}
+                onChange={(event) => setDraft((current) => ({ ...current, reminderMinutes: event.target.value }))}
+              >
+                <option value="">No reminder</option>
+                <option value="0">At start time</option>
+                <option value="10">10 minutes before</option>
+                <option value="30">30 minutes before</option>
+                <option value="60">1 hour before</option>
+              </select>
               <textarea
                 className="md:col-span-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
                 placeholder="Add context or notes"
@@ -102,10 +137,19 @@ export function EventBoard() {
                 onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))}
               />
             </div>
-            <Button className="mt-3" onClick={handleCreate}>
-              <PlusCircle className="mr-1 h-4 w-4" />
-              Save block
-            </Button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={handleCreate}>
+                <PlusCircle className="mr-1 h-4 w-4" />
+                Save block
+              </Button>
+              {permission !== "denied" &&
+                permission !== "unsupported" &&
+                events.some((event) => event.reminderMinutes != null) && (
+                <Button variant="outline" onClick={requestPermission}>
+                  Enable notifications
+                </Button>
+              )}
+            </div>
           </div>
 
           {loading ? (
@@ -159,6 +203,7 @@ export function EventBoard() {
           </div>
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }

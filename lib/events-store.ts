@@ -1,6 +1,8 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
+export type Recurrence = "none" | "daily" | "weekly" | "monthly";
+
 export interface CalendarEventRecord {
   id: string;
   title: string;
@@ -9,6 +11,8 @@ export interface CalendarEventRecord {
   allDay?: boolean;
   category: string;
   note?: string;
+  recurrence?: Recurrence;
+  reminderMinutes?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,6 +24,8 @@ export interface CalendarEventInput {
   allDay?: boolean;
   category?: string;
   note?: string;
+  recurrence?: Recurrence;
+  reminderMinutes?: number | null;
 }
 
 const DATA_FILE = path.join(process.cwd(), "data", "events.json");
@@ -58,6 +64,8 @@ export async function createEvent(input: CalendarEventInput) {
     allDay: input.allDay ?? false,
     category: input.category ?? "Focus",
     note: input.note?.trim() ?? "",
+    recurrence: input.recurrence ?? "none",
+    reminderMinutes: input.reminderMinutes ?? null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
