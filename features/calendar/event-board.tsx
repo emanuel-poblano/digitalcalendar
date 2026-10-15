@@ -5,6 +5,7 @@ import { PlusCircle, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WeekView } from "@/features/calendar/week-view";
 import { EmptyState } from "@/components/empty-state/empty-state";
 
 export type CalendarEventItem = {
@@ -15,12 +16,14 @@ export type CalendarEventItem = {
   allDay?: boolean;
   category: string;
   note?: string;
+  recurrence?: "none" | "daily" | "weekly" | "monthly";
+  reminderMinutes?: number | null;
 };
 
 export function EventBoard() {
   const [events, setEvents] = useState<CalendarEventItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [draft, setDraft] = useState({ title: "", start: "", end: "", category: "Focus", note: "" });
+  const [draft, setDraft] = useState({ title: "", start: "", end: "", category: "Focus", note: "", recurrence: "none", reminderMinutes: "" });
 
   const loadEvents = async () => {
     try {
@@ -42,10 +45,14 @@ export function EventBoard() {
     await fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(draft),
+      body: JSON.stringify({
+        ...draft,
+        end: draft.end || null,
+        reminderMinutes: draft.reminderMinutes === "" ? null : Number(draft.reminderMinutes),
+      }),
     });
 
-    setDraft({ title: "", start: "", end: "", category: "Focus", note: "" });
+    setDraft({ title: "", start: "", end: "", category: "Focus", note: "", recurrence: "none", reminderMinutes: "" });
     await loadEvents();
   };
 
@@ -59,6 +66,8 @@ export function EventBoard() {
   };
 
   return (
+    <div className="space-y-6">
+    <WeekView events={events} />
     <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
       <Card>
         <CardHeader>
@@ -95,6 +104,29 @@ export function EventBoard() {
                 value={draft.end}
                 onChange={(event) => setDraft((current) => ({ ...current, end: event.target.value }))}
               />
+              <select
+                aria-label="Repeat"
+                className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
+                value={draft.recurrence}
+                onChange={(event) => setDraft((current) => ({ ...current, recurrence: event.target.value }))}
+              >
+                <option value="none">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+              <select
+                aria-label="Reminder"
+                className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
+                value={draft.reminderMinutes}
+                onChange={(event) => setDraft((current) => ({ ...current, reminderMinutes: event.target.value }))}
+              >
+                <option value="">No reminder</option>
+                <option value="0">At start time</option>
+                <option value="15">15 minutes before</option>
+                <option value="60">1 hour before</option>
+                <option value="1440">1 day before</option>
+              </select>
               <textarea
                 className="md:col-span-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm outline-none dark:border-zinc-800 dark:bg-zinc-950"
                 placeholder="Add context or notes"
@@ -160,5 +192,6 @@ export function EventBoard() {
         </CardContent>
       </Card>
     </div>
+  </div>
   );
 }
