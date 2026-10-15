@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { expandOccurrences, type RecurringSource } from "@/lib/recurrence";
 
@@ -9,18 +9,28 @@ type ReminderEvent = RecurringSource & { title: string; reminderMinutes?: number
 /** Fires browser notifications for upcoming occurrences that have a reminder set. */
 export function useReminders(events: ReminderEvent[]) {
   const fired = useRef(new Set<string>());
+  const [permission, setPermission] = useState<NotificationPermission | "unsupported" | null>(null);
+
+  const requestPermission = () => {
+    if (typeof Notification === "undefined") {
+      setPermission("unsupported");
+      return;
+    }
+    if (Notification.permission !== "default") {
+      setPermission(Notification.permission);
+      return;
+    }
+    void Notification.requestPermission().then(setPermission);
+  };
 
   useEffect(() => {
     if (typeof Notification === "undefined") return;
-    if (events.some((e) => e.reminderMinutes != null) && Notification.permission === "default") {
-      void Notification.requestPermission();
-    }
-
     const check = () => {
       if (Notification.permission !== "granted") return;
       const now = new Date();
+      const lookback = new Date(now.getTime() - 60000);
       const horizon = new Date(now.getTime() + 25 * 60 * 60 * 1000);
-      for (const o of expandOccurrences(events.filter((e) => e.reminderMinutes != null), now, horizon)) {
+      for (const o of expandOccurrences(events.filter((e) => e.reminderMinutes != null), lookback, horizon)) {
         const fireAt = o.occurrenceStart.getTime() - (o.reminderMinutes ?? 0) * 60000;
         const key = `${o.id}-${o.occurrenceStart.toISOString()}`;
         if (fireAt <= now.getTime() && o.occurrenceStart.getTime() > now.getTime() - 60000 && !fired.current.has(key)) {
@@ -34,4 +44,6 @@ export function useReminders(events: ReminderEvent[]) {
     const timer = setInterval(check, 30000);
     return () => clearInterval(timer);
   }, [events]);
+
+  return { permission, requestPermission };
 }

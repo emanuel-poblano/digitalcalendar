@@ -37,7 +37,20 @@ export function expandOccurrences<T extends RecurringSource>(events: T[], from: 
     if (Number.isNaN(first.getTime())) continue;
     const duration = event.end ? new Date(event.end).getTime() - first.getTime() : null;
     const rule = event.recurrence ?? "none";
-    for (let i = 0; i < 1000; i++) {
+    let startIndex = 0;
+    if (rule !== "none" && from > first) {
+      const daysFromFirst = Math.floor(
+        (Date.UTC(from.getFullYear(), from.getMonth(), from.getDate()) -
+          Date.UTC(first.getFullYear(), first.getMonth(), first.getDate())) /
+          86400000
+      );
+      if (rule === "daily") startIndex = daysFromFirst;
+      else if (rule === "weekly") startIndex = Math.floor(daysFromFirst / 7);
+      else if (rule === "monthly") {
+        startIndex = (from.getFullYear() - first.getFullYear()) * 12 + from.getMonth() - first.getMonth();
+      }
+    }
+    for (let i = startIndex; ; i++) {
       const start = rule === "none" ? first : addInterval(first, rule, i);
       if (start >= to) break;
       if (start >= from) {

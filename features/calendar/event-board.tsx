@@ -66,7 +66,7 @@ export function EventBoard() {
     await loadEvents();
   };
 
-  useReminders(events);
+  const { permission, requestPermission } = useReminders(events);
 
   return (
     <div className="space-y-6">
@@ -137,10 +137,19 @@ export function EventBoard() {
                 onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))}
               />
             </div>
-            <Button className="mt-3" onClick={handleCreate}>
-              <PlusCircle className="mr-1 h-4 w-4" />
-              Save block
-            </Button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button onClick={handleCreate}>
+                <PlusCircle className="mr-1 h-4 w-4" />
+                Save block
+              </Button>
+              {permission !== "denied" &&
+                permission !== "unsupported" &&
+                events.some((event) => event.reminderMinutes != null) && (
+                <Button variant="outline" onClick={requestPermission}>
+                  Enable notifications
+                </Button>
+              )}
+            </div>
           </div>
 
           {loading ? (
